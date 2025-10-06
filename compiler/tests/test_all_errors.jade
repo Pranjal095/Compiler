@@ -1,0 +1,20 @@
+$ Test file with various errors
+
+role; $ Missing role name
+role worker $ Missing semicolon
+role master[]; $ Missing array size
+
+task badtask on worker $ Missing opening brace
+{
+    int x $ Missing semicolon
+    int y = ; $ Missing value
+    
+    if (x > 0 $ Missing closing parenthesis
+    {
+        print("error");
+    }
+    
+    string msg = "unterminated string;
+    
+    unknown_token @#$;
+}

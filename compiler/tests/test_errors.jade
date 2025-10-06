@@ -1,0 +1,16 @@
+$ Error cases for testing parser error handling
+
+role badtest;
+
+task error_test on badtest {
+    $ Missing semicolon
+    int x = 5
+    
+    $ Invalid syntax
+    if (x > 0 {
+        print("Missing closing paren");
+    }
+    
+    $ Unclosed string
+    string bad = "unclosed string;
+}

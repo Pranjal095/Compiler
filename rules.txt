@@ -1,0 +1,150 @@
+program
+    : decl_list
+    ;
+
+decl_list
+    : decl_list decl
+    | decl
+    ;
+
+decl
+    : role_decl
+    | task_decl
+    | type_decl ';'
+    | error ';' 
+    ;
+
+role_decl
+    : T_ROLE T_ID ';'
+    | T_ROLE T_ID '[' T_INT_LITERAL ']' ';'
+    | T_ROLE error ';' 
+    | T_ROLE T_ID error ';' 
+    ;
+
+task_decl
+    : T_TASK T_ID T_ON role_target '{' stmt_list '}'
+    | T_TASK error '{' stmt_list '}' 
+    | T_TASK T_ID T_ON role_target '{' stmt_list error 
+    ;
+
+role_target
+    : T_ID
+    | T_ID '[' T_INT_LITERAL ']'
+    | T_ID '[' T_INT_LITERAL T_RANGE T_INT_LITERAL ']'
+    ;
+
+stmt_list
+    : stmt_list stmt
+    | stmt
+    ;
+
+stmt
+    : var_decl
+    | assign_stmt ';'
+    | comm_stmt ';'
+    | function_call ';'
+    | control_flow_stmt
+    | T_PRINT '(' expr ')' ';'
+    | error ';' 
+    | T_PRINT error ';' 
+    ;
+
+var_decl
+    : type_decl T_ID ';'
+    | type_decl T_ID T_ASSIGN expr ';'
+    ;
+
+assign_stmt
+    : T_ID T_ASSIGN expr
+    ;
+
+expr
+    : T_INT_LITERAL
+    | T_FLOAT_LITERAL
+    | T_STRING_LITERAL
+    | T_BOOL_LITERAL
+    | T_ID
+    | function_call
+    | expr T_AND expr
+    | expr T_OR expr
+    | expr T_EQ expr
+    | expr T_NEQ expr
+    | expr T_LT expr
+    | expr T_GT expr
+    | expr T_LTE expr
+    | expr T_GTE expr
+    | '(' expr ')'
+    | '(' error ')'
+    ;
+
+function_call
+    : T_ID '(' arg_list ')'
+    ;
+
+arg_list
+    : /* empty */
+    | arg_list_nonempty
+    ;
+
+arg_list_nonempty
+    : expr
+    | arg_list_nonempty ',' expr
+    ;
+
+comm_stmt
+    : T_BROADCAST expr T_TO role_targets
+    | T_SEND expr T_TO role_target
+    | T_RECV expr T_FROM role_target
+    | T_GATHER T_FROM role_targets
+    | T_SPAWN T_ID T_ON role_targets
+    ;
+
+role_targets
+    : role_target
+    | role_targets ',' role_target
+    ;
+
+control_flow_stmt
+    : T_IF '(' expr ')' '{' stmt_list '}'
+    | T_IF '(' expr ')' '{' stmt_list '}' T_ELSE '{' stmt_list '}'
+    ;
+
+type_decl
+    : primitive_type
+    | tensor_type
+    | list_type
+    | record_type
+    ;
+
+primitive_type
+    : T_INT
+    | T_FLOAT
+    | T_BOOL
+    | T_STRING
+    ;
+
+tensor_type
+    : T_TENSOR '<' type_decl '>' tensor_dims
+    ;
+
+tensor_dims
+    : tensor_dims '[' T_INT_LITERAL ']'
+    | '[' T_INT_LITERAL ']'
+    ;
+
+list_type
+    : T_LIST '<' type_decl '>'
+    ;
+
+record_type
+    : T_RECORD '{' field_list '}'
+    ;
+
+field_list
+    : field_list field_decl
+    | field_decl
+    ;
+
+field_decl
+    : T_ID ':' type_decl ';'
+    ;

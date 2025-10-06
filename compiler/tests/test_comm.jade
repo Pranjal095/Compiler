@@ -1,0 +1,28 @@
+$ Communication and control flow testing
+
+role coordinator;
+role worker[4];
+
+task distribute_work on coordinator {
+    int task_count = 100;
+    
+    broadcast task_count to worker;
+    
+    if (task_count > 0) {
+        send task_count to worker[0];
+        print("Tasks distributed");
+    }
+}
+
+task process_data on worker[0..3] {
+    int data;
+    recv data from coordinator;
+    
+    if (data > 50) {
+        print("Processing large dataset");
+    } else {
+        print("Processing small dataset");
+    }
+    
+    gather from worker;
+}

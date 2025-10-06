@@ -1,0 +1,15 @@
+$ Role declaration testing
+
+role master;
+role worker[8];
+role backup[2];
+
+$ Type declarations
+tensor<float>[3][3];
+list<int>;
+
+record Person {
+    name: string;
+    age: int;
+    active: bool;
+};

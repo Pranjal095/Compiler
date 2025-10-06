@@ -1,0 +1,14 @@
+$ Basic test program for the Jade language
+
+role coordinator;
+role worker[4];
+
+task setup on coordinator {
+    int x = 42;
+    float pi = 3.14;
+    bool ready = true;
+    string msg = "Hello World";
+    
+    print(x);
+    print(pi);
+}
