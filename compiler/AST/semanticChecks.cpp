@@ -1,4 +1,4 @@
-#include "semantic_checks.h"
+#include "semanticChecks.h"
 #include <iostream>
 #include <iomanip>
 

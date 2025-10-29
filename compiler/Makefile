@@ -15,10 +15,10 @@ LEXER_OUT = lex.yy.c
 PARSER_OUT = parser.tab.c
 PARSER_HDR = parser.tab.h
 
-AST_SRCS = AST/ast.cpp AST/ast_nodes.cpp AST/tree_print_visitor.cpp
-AST_OBJS = ast.o ast_nodes.o tree_print_visitor.o
+AST_SRCS = AST/ast.cpp AST/astNodes.cpp AST/treePrintVisitor.cpp
+AST_OBJS = ast.o astNodes.o treePrintVisitor.o
 
-SEMANTIC_SRCS = SymbolTable/symbol_table.cpp AST/semantic_checks.cpp
+SEMANTIC_SRCS = SymbolTable/symbolTable.cpp AST/semanticChecks.cpp
 SEMANTIC_OBJS = $(SEMANTIC_SRCS:.cpp=.o)
 
 # Object files
@@ -32,28 +32,28 @@ $(TARGET): $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # Generate parser files
-$(PARSER_OUT) $(PARSER_HDR): $(PARSER_SRC) parser_types.h
+$(PARSER_OUT) $(PARSER_HDR): $(PARSER_SRC) parserTypes.h
 	$(YACC) -d $(PARSER_SRC)
 
 # Generate lexer file
-$(LEXER_OUT): $(LEXER_SRC) $(PARSER_HDR) parser_types.h
+$(LEXER_OUT): $(LEXER_SRC) $(PARSER_HDR) parserTypes.h
 	$(LEX) -o $(LEXER_OUT) $(LEXER_SRC)
 
 # Compile object files
-parser.tab.o: $(PARSER_OUT) $(PARSER_HDR) parser_types.h AST/ast.h AST/ast_nodes.h AST/visitor.h
+parser.tab.o: $(PARSER_OUT) $(PARSER_HDR) parserTypes.h AST/ast.h AST/astNodes.h AST/visitor.h
 	$(CXX) $(CXXFLAGS) -c -o parser.tab.o $(PARSER_OUT)
 
-lex.yy.o: $(LEXER_OUT) $(PARSER_HDR) parser_types.h
+lex.yy.o: $(LEXER_OUT) $(PARSER_HDR) parserTypes.h
 	$(CXX) $(CXXFLAGS) -c -o lex.yy.o $(LEXER_OUT)
 
 ast.o: AST/ast.cpp AST/ast.h
 	$(CXX) $(CXXFLAGS) -c -o ast.o AST/ast.cpp
 
-ast_nodes.o: AST/ast_nodes.cpp AST/ast_nodes.h AST/ast.h AST/visitor.h
-	$(CXX) $(CXXFLAGS) -c -o ast_nodes.o AST/ast_nodes.cpp
+astNodes.o: AST/astNodes.cpp AST/astNodes.h AST/ast.h AST/visitor.h
+	$(CXX) $(CXXFLAGS) -c -o astNodes.o AST/astNodes.cpp
 
-tree_print_visitor.o: AST/tree_print_visitor.cpp AST/visitor.h AST/ast_nodes.h
-	$(CXX) $(CXXFLAGS) -c -o tree_print_visitor.o AST/tree_print_visitor.cpp
+treePrintVisitor.o: AST/treePrintVisitor.cpp AST/visitor.h AST/astNodes.h
+	$(CXX) $(CXXFLAGS) -c -o treePrintVisitor.o AST/treePrintVisitor.cpp
 
 SymbolTable/%.o: SymbolTable/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -63,7 +63,8 @@ clean:
 	rm -f $(TARGET) $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) parser.tab.c parser.tab.h lex.yy.c AST.tree ast.o
 
 # Test with sample programs
-test: 
+test: $(TARGET)
+	rm -f $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) parser.tab.c parser.tab.h lex.yy.c ast.o
 # 	@echo "Testing basic program..."
 	./$(TARGET) tests/simple_test.jade
 	@echo "Testing role declarations..."

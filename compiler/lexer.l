@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "tokens.h"
-#include "parser_types.h"
+#include "parserTypes.h"
 
 extern YYSTYPE yylval;
 extern int yylineno;

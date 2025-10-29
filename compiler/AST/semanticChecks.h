@@ -2,8 +2,8 @@
 #define SEMANTIC_CHECKS_H
 
 #include "ast.h"
-#include "ast_nodes.h"
-#include "../SymbolTable/symbol_table.h"
+#include "astNodes.h"
+#include "../SymbolTable/symbolTable.h"
 #include <memory>
 #include <string>
 

@@ -1,5 +1,5 @@
 #include "visitor.h"
-#include "ast_nodes.h"
+#include "astNodes.h"
 #include <string>
 
 void TreePrintVisitor::visit(Program& node) {

@@ -4,10 +4,10 @@
 #include <vector>
 #include <memory>
 #include "AST/ast.h"
-#include "AST/ast_nodes.h"
+#include "AST/astNodes.h"
 #include "AST/visitor.h"
-#include "parser_types.h"
-#include "AST/semantic_checks.h"
+#include "parserTypes.h"
+#include "AST/semanticChecks.h"
 
 // AST root
 Program* ast_root = nullptr;
