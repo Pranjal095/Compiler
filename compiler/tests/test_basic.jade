@@ -2,6 +2,14 @@ $ Basic test program for the Jade language
 
 role coordinator;
 role worker[4];
+record{
+    id: int;
+    value: float;
+    name: string;
+    flag: bool;
+} dataa;
+
+tensor <Data> [100][200][300];
 
 task setup on coordinator {
     int x = 42;
@@ -11,4 +19,15 @@ task setup on coordinator {
     
     print(x);
     print(pi);
+    print("Hello JADE");
+    print(100);
+    
+    x = pi;
+    pi = x;
+
+    x=msg;
+
+    print(x);
+    print(pi);
+    
 }

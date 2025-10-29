@@ -7,6 +7,7 @@
 #include "AST/ast_nodes.h"
 #include "AST/visitor.h"
 #include "parser_types.h"
+#include "AST/semantic_checks.h"
 
 // AST root
 Program* ast_root = nullptr;
@@ -89,7 +90,14 @@ decl
     : role_decl         { $$ = $1; }
     | task_decl         { $$ = $1; }
     | type_alias_decl   { $$ = $1; }
-    | type_decl ';'     { /* Catches standalone types like tensor<int>[3]; and ignores them */ $$ = nullptr; }
+    | type_decl ';'     { 
+        // This catches incomplete type declarations (e.g., tensor without variable name)
+        // Create a TypeDecl with empty id to flag as error
+        auto node = new TypeDecl();
+        node->type = std::unique_ptr<Type>($1);
+        node->id = ""; // Empty id indicates incomplete declaration
+        $$ = node;
+    }
     | error ';' { 
         print_error("Invalid declaration", yytext); 
         yyerrok; 
@@ -597,7 +605,28 @@ int main(int argc, char **argv) {
             ast_root->accept(visitor);
             printf("AST tree generated in AST.tree\n");
             
-            // TODO: Add semantic analysis and code generation here
+            // Perform semantic analysis
+            SemanticAnalyzer analyzer;
+            bool semantic_success = analyzer.analyze(ast_root);
+            
+            if (semantic_success) {
+                printf("✓ Semantic analysis successful!\n");
+                analyzer.print_symbol_table();
+            } else {
+                printf("✗ Semantic analysis failed with %d error(s)\n", analyzer.get_error_count());
+                if (analyzer.get_warning_count() > 0) {
+                    printf("  %d warning(s) found\n", analyzer.get_warning_count());
+                }
+                analyzer.print_symbol_table();
+                delete ast_root;
+                if (argc > 1) fclose(yyin);
+                return 1;
+            }
+            
+            if (analyzer.get_warning_count() > 0) {
+                printf("  %d warning(s) found\n", analyzer.get_warning_count());
+            }
+            
             delete ast_root;
         }
     } else if (result == 0) {

@@ -122,6 +122,7 @@ public:
     void visit(ListType &node) override;
     void visit(FieldDecl &node) override;
     void visit(RecordType &node) override;
+    void print_indent();
 };
 
 #endif // VISITOR_H
