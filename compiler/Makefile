@@ -1,5 +1,4 @@
 # Makefile for the Jade Language Compiler
-
 CXX = g++
 CXXFLAGS = -Wall -g -std=c++17 -I. -I./AST
 LEX = flex
@@ -24,12 +23,16 @@ SEMANTIC_OBJS = $(SEMANTIC_SRCS:.cpp=.o)
 # Object files
 OBJS = parser.tab.o lex.yy.o $(AST_OBJS)
 
+# Test Input file (take as command line argument)
+input = simple_test.jade
+
 # Default target
 all: $(TARGET)
 
 # Build the compiler
 $(TARGET): $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
+	rm -f $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) parser.tab.c parser.tab.h lex.yy.c ast.o	
 
 # Generate parser files
 $(PARSER_OUT) $(PARSER_HDR): $(PARSER_SRC) parserTypes.h
@@ -60,13 +63,13 @@ SymbolTable/%.o: SymbolTable/%.cpp
 
 # Clean up generated files
 clean:
-	rm -f $(TARGET) $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) parser.tab.c parser.tab.h lex.yy.c AST.tree ast.o
+	rm -f $(TARGET) AST.tree
 
 # Test with sample programs
 test: $(TARGET)
 	rm -f $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) parser.tab.c parser.tab.h lex.yy.c ast.o
 # 	@echo "Testing basic program..."
-	./$(TARGET) tests/simple_test.jade
+	./$(TARGET) tests/$(input).jade
 	@echo "Testing role declarations..."
 # 	./$(TARGET) tests/test_roles.jade
 # 	@echo "Testing task with communication..."
