@@ -43,6 +43,16 @@ public:
     void accept(Visitor &v) override;
 };
 
+class CppCodeDecl : public Decl {
+public:
+    std::string code;
+    CppCodeDecl() = default;
+    void accept(Visitor& visitor) override;
+    std::string to_string() const {
+        return "CppCodeDecl";
+    }
+};
+
 class VarDecl : public Stmt {
 public:
     std::unique_ptr<Type> type;

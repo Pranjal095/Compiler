@@ -12,6 +12,7 @@ class Decl;
 class RoleDecl;
 class TaskDecl;
 class TypeDecl;
+class CppCodeDecl;
 class VarDecl;
 class Stmt;
 class AssignStmt;
@@ -53,6 +54,7 @@ typedef union YYSTYPE {
     std::vector<std::unique_ptr<Decl>>* decl_list;
     RoleDecl* role_decl_node;
     TaskDecl* task_decl_node;
+    CppCodeDecl* cpp_code_decl_node;
     RoleTarget* role_target_node;
     std::vector<std::unique_ptr<RoleTarget>>* role_targets;
     Stmt* stmt_node;

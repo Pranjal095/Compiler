@@ -394,3 +394,10 @@ void SemanticAnalyzer::print_symbol_table() const {
     std::cout << "\n=== Symbol Table ===\n";
     global_scope->print();
 }
+
+void SemanticAnalyzer::visit(CppCodeDecl& node) {
+    if (node.code.empty()) {
+        error("Empty C++ code block");
+    }
+    // We do not need any further semantic analysis for inline C++ code
+}

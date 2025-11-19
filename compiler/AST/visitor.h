@@ -10,6 +10,7 @@ class Program;
 class RoleDecl;
 class TaskDecl;
 class TypeDecl;
+class CppCodeDecl;
 class RoleTarget;
 class VarDecl;
 class AssignStmt;
@@ -44,6 +45,7 @@ public:
     virtual void visit(RoleDecl &node) = 0;
     virtual void visit(TaskDecl &node) = 0;
     virtual void visit(TypeDecl &node) = 0;
+    virtual void visit(CppCodeDecl &node) = 0;
     virtual void visit(RoleTarget &node) = 0;
     virtual void visit(VarDecl &node) = 0;
     virtual void visit(AssignStmt &node) = 0;
@@ -99,6 +101,7 @@ public:
     void visit(RoleDecl &node) override;
     void visit(TaskDecl &node) override;
     void visit(TypeDecl &node) override;
+    void visit(CppCodeDecl &node) override;
     void visit(RoleTarget &node) override;
     void visit(VarDecl &node) override;
     void visit(AssignStmt &node) override;

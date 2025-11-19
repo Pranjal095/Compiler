@@ -57,6 +57,39 @@ void TreePrintVisitor::visit(TypeDecl& node) {
     indent--;
 }
 
+void TreePrintVisitor::visit(CppCodeDecl& node) {
+    printIndent();
+    outFile << "CppCodeDecl\n";
+    indent++;
+    printIndent();
+    std::string code = node.code;
+    std::string preview;
+    for (size_t i = 0; i < code.length() && i < 80; i++) {
+        if (code[i] == '\n' || code[i] == '\r') {
+            preview += ' ';
+        }
+        else if (code[i] == '\t') {
+            preview += ' ';
+        }
+        else {
+            preview += code[i];
+        }
+    }
+    while (!preview.empty() && preview.back() == ' ') {
+        preview.pop_back();
+    }
+
+    outFile << "\"" << preview;
+    if (code.length() > 80) {
+        outFile << "...\" (" << code.length() << " chars total)";
+    }
+    else {
+        outFile << "\"";
+    }
+    outFile << "\n";
+    indent--;
+}
+
 void TreePrintVisitor::visit(RoleTarget& node) {
     printIndent();
     outFile << "RoleTarget: " << node.id;

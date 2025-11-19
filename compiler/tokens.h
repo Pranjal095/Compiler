@@ -37,21 +37,23 @@ extern int yydebug;
     T_FROM = 275,                  /* T_FROM  */
     T_SPAWN = 276,                 /* T_SPAWN  */
     T_TO = 277,                    /* T_TO  */
-    T_INT_LITERAL = 278,           /* T_INT_LITERAL  */
-    T_BOOL_LITERAL = 279,          /* T_BOOL_LITERAL  */
-    T_FLOAT_LITERAL = 280,         /* T_FLOAT_LITERAL  */
-    T_STRING_LITERAL = 281,        /* T_STRING_LITERAL  */
-    T_ID = 282,                    /* T_ID  */
-    T_AND = 283,                   /* T_AND  */
-    T_OR = 284,                    /* T_OR  */
-    T_EQ = 285,                    /* T_EQ  */
-    T_NEQ = 286,                   /* T_NEQ  */
-    T_LT = 287,                    /* T_LT  */
-    T_GT = 288,                    /* T_GT  */
-    T_LTE = 289,                   /* T_LTE  */
-    T_GTE = 290,                   /* T_GTE  */
-    T_ASSIGN = 291,                /* T_ASSIGN  */
-    T_RANGE = 292                  /* T_RANGE  */
+    T_CPP = 278,                   /* T_CPP  */
+    T_CPP_BLOCK = 279,             /* T_CPP_BLOCK  */
+    T_INT_LITERAL = 280,           /* T_INT_LITERAL  */
+    T_BOOL_LITERAL = 281,          /* T_BOOL_LITERAL  */
+    T_FLOAT_LITERAL = 282,         /* T_FLOAT_LITERAL  */
+    T_STRING_LITERAL = 283,        /* T_STRING_LITERAL  */
+    T_ID = 284,                    /* T_ID  */
+    T_AND = 285,                   /* T_AND  */
+    T_OR = 286,                    /* T_OR  */
+    T_EQ = 287,                    /* T_EQ  */
+    T_NEQ = 288,                   /* T_NEQ  */
+    T_LT = 289,                    /* T_LT  */
+    T_GT = 290,                    /* T_GT  */
+    T_LTE = 291,                   /* T_LTE  */
+    T_GTE = 292,                   /* T_GTE  */
+    T_ASSIGN = 293,                /* T_ASSIGN  */
+    T_RANGE = 294                  /* T_RANGE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif

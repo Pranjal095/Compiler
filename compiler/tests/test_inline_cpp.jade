@@ -1,0 +1,42 @@
+$ Test inline C++ code blocks
+
+role coordinator;
+role worker[4];
+
+cpp {{
+//this computes factorial
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+}}
+
+cpp {{
+#include <vector>
+std::vector<float> add_vectors(const std::vector<float>& a, const std::vector<float>& b) {
+    std::vector<float> result;
+    for (int i = 0; i < a.size() && i < b.size(); ++i) {
+        result.push_back(a[i] + b[i]);
+    }
+    return result;
+}
+}}
+
+task compute on coordinator {
+    int result = 120;
+    print(result);
+}
+
+cpp {{
+void logMessage(const std::string& message) {
+    std::cout << "[LOG] " << message << std::endl;
+}
+}}
+
+task process on worker[0..3] {
+    int data;
+    recv data from coordinator;
+    print(data);
+}

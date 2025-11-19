@@ -28,6 +28,8 @@ void print_error(const char* msg, const char* token);
 %token T_INT T_FLOAT T_BOOL T_STRING
 %token T_TENSOR T_LIST T_RECORD
 %token T_BROADCAST T_SEND T_RECV T_GATHER T_FROM T_SPAWN T_TO
+%token T_CPP
+%token <sval> T_CPP_BLOCK
 %token <ival> T_INT_LITERAL
 %token <ival> T_BOOL_LITERAL
 %token <fval> T_FLOAT_LITERAL
@@ -41,6 +43,7 @@ void print_error(const char* msg, const char* token);
 %type <decl_node> decl type_alias_decl
 %type <role_decl_node> role_decl
 %type <task_decl_node> task_decl
+%type <cpp_code_decl_node> cpp_code_decl
 %type <role_target_node> role_target
 %type <role_targets> role_targets
 %type <stmt_list> stmt_list
@@ -103,6 +106,7 @@ decl
         yyerrok; 
         $$ = nullptr;
     }
+    | cpp_code_decl     { $$ = $1; }
     ;
 
 type_alias_decl
@@ -167,6 +171,14 @@ task_decl
         print_error("Missing '}' in task declaration", yytext); 
         yyerrok; 
         $$ = nullptr;
+    }
+    ;
+
+cpp_code_decl
+    : T_CPP_BLOCK {
+        $$ = new CppCodeDecl();
+        $$->code = $1;
+        free($1);
     }
     ;
 

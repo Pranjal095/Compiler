@@ -5,6 +5,7 @@ void RoleDecl::accept(Visitor &v) { v.visit(*this); }
 void RoleTarget::accept(Visitor &v) { v.visit(*this); }
 void TaskDecl::accept(Visitor &v) { v.visit(*this); }
 void TypeDecl::accept(Visitor &v) { v.visit(*this); }
+void CppCodeDecl::accept(Visitor& v) {v.visit(*this); }
 void VarDecl::accept(Visitor &v) { v.visit(*this); }
 void AssignStmt::accept(Visitor &v) { v.visit(*this); }
 void PrintStmt::accept(Visitor &v) { v.visit(*this); }

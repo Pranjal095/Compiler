@@ -35,6 +35,7 @@ private:
     std::string analyze_expr(Expr* expr);
     std::string analyze_function_call(FunctionCall* call);
     void analyze_role_target(RoleTarget* target);
+    void visit(CppCodeDecl& node);
 
 public:
     SemanticAnalyzer();

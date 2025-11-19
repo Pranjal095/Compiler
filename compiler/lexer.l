@@ -15,10 +15,11 @@ extern int yylineno;
 
 %option yylineno
 %option nounput
-%option noinput
 
 DIGIT       [0-9]
 ID          [a-zA-Z_][a-zA-Z0-9_]*
+
+%x CPP_BLOCK
 
 %%
 [ \t\n]+    { /* Ignore whitespace */ }
@@ -48,7 +49,58 @@ ID          [a-zA-Z_][a-zA-Z0-9_]*
 "spawn"     { return T_SPAWN; }
 "to"        { return T_TO; }
 
+"cpp"       { BEGIN(CPP_BLOCK); }
+
 ".."        { return T_RANGE; }
+
+<CPP_BLOCK>[ \t\n]+ { /* Ignore whitespace */ }
+
+<CPP_BLOCK>"{{" {
+    int braces = 2;
+    int capacity = 1024;
+    int length = 0;
+    char* code = (char*)malloc(capacity);
+    
+    int c;
+    while((c = yyinput()) != EOF){
+        if (length >= capacity-2){
+            capacity *= 2;
+            code = (char*)realloc(code,capacity);
+        }
+        code[length++] = c;
+
+        if (c == '{') {
+            braces++;
+        }
+        else if(c == '}') {
+            braces--;
+            if (braces == 0) {
+                length--;
+                if (length > 0 && code[length-1] == '}') {
+                    length--;
+                    break;
+                }
+                else {
+                    braces = 1;
+                }
+            }
+        }
+        else if (c == '\n') {
+            yylineno++;
+        }
+    }
+
+    code[length] = '\0';
+    yylval.sval = code;
+    BEGIN(INITIAL);
+    return T_CPP_BLOCK;
+}
+
+<CPP_BLOCK>. {
+    fprintf(stderr, "Lexical error at line %d: Expected '{{' after 'cpp'\n", yylineno);
+    BEGIN(INITIAL);
+    return 0;
+}
 
 {DIGIT}+    { 
     yylval.ival = atoi(yytext);
