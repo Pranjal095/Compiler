@@ -34,7 +34,7 @@ void print_error(const char* msg, const char* token);
 %token <ival> T_BOOL_LITERAL
 %token <fval> T_FLOAT_LITERAL
 %token <sval> T_STRING_LITERAL T_ID
-%token T_AND T_OR T_EQ T_NEQ T_LT T_GT T_LTE T_GTE
+%token T_PLUS T_MINUS T_MUL T_DIV T_MOD T_AND T_OR T_EQ T_NEQ T_LT T_GT T_LTE T_GTE
 %token T_ASSIGN T_RANGE
 
 /* Non-terminal types */
@@ -66,7 +66,8 @@ void print_error(const char* msg, const char* token);
 %left T_AND
 %left T_EQ T_NEQ
 %left T_LT T_GT T_LTE T_GTE
-
+%left T_PLUS T_MINUS
+%left T_MUL T_DIV T_MOD
 %%
 
 program
@@ -307,6 +308,41 @@ expr
         $$ = node;
     }
     | function_call { $$ = $1; }
+    | expr T_PLUS expr {
+        auto node = new BinaryOp();
+        node->op = "+";
+        node->left = std::unique_ptr<Expr>($1);
+        node->right = std::unique_ptr<Expr>($3);
+        $$ = node;
+    }
+    | expr T_MINUS expr {
+        auto node = new BinaryOp();
+        node->op = "-";
+        node->left = std::unique_ptr<Expr>($1);
+        node->right = std::unique_ptr<Expr>($3);
+        $$ = node;
+    }
+    | expr T_MUL expr {
+        auto node = new BinaryOp();
+        node->op = "*";
+        node->left = std::unique_ptr<Expr>($1);
+        node->right = std::unique_ptr<Expr>($3);
+        $$ = node;
+    }
+    | expr T_DIV expr {
+        auto node = new BinaryOp();
+        node->op = "/";
+        node->left = std::unique_ptr<Expr>($1);
+        node->right = std::unique_ptr<Expr>($3);
+        $$ = node;
+    }
+    | expr T_MOD expr {
+        auto node = new BinaryOp();
+        node->op = "%";
+        node->left = std::unique_ptr<Expr>($1);
+        node->right = std::unique_ptr<Expr>($3);
+        $$ = node;
+    }
     | expr T_AND expr  { 
         auto node = new BinaryOp();
         node->op = "&&";

@@ -152,6 +152,11 @@ ID          [a-zA-Z_][a-zA-Z0-9_]*
     return T_ID; 
 }
 
+"+"         { return T_PLUS; }
+"-"         { return T_MINUS; }
+"*"         { return T_MUL; }
+"/"         { return T_DIV; }
+"%"         { return T_MOD; }
 "&&"        { return T_AND; }
 "||"        { return T_OR; }
 "=="        { return T_EQ; }
