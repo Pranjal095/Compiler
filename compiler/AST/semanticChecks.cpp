@@ -286,6 +286,13 @@ void SemanticAnalyzer::analyze_comm_stmt(Stmt* stmt) {
         analyze_expr(send->expr.get());
         analyze_role_target(send->target.get());
     } else if (auto recv = dynamic_cast<RecvStmt*>(stmt)) {
+        if (auto identifier = dynamic_cast<Identifier*>(recv->expr.get())) {
+            if (auto sym = current_scope->lookup(identifier->id)) {
+                if (sym->kind == SYM_VARIABLE) {
+                    sym->is_initialized = true;
+                }
+            }
+        }
         analyze_expr(recv->expr.get());
         analyze_role_target(recv->from.get());
     } else if (auto gather = dynamic_cast<GatherStmt*>(stmt)) {
