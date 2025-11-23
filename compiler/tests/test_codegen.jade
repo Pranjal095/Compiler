@@ -1,0 +1,20 @@
+role Master;
+role Worker[2];
+
+record Point {
+    x: int;
+    y: int;
+};
+
+tensor<float>[2][2] Matrix;
+
+task worker_task on Worker {
+    print("Hello from worker");
+}
+
+task master_task on Master {
+    Point p;
+    Matrix m;
+    spawn worker_task on Worker; 
+    gather from Worker; 
+}

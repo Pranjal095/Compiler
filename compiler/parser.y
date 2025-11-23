@@ -8,6 +8,7 @@
 #include "AST/visitor.h"
 #include "parserTypes.h"
 #include "AST/semanticChecks.h"
+#include "AST/codeGenerator.h"
 
 // AST root
 Program* ast_root = nullptr;
@@ -658,10 +659,17 @@ int main(int argc, char **argv) {
             bool semantic_success = analyzer.analyze(ast_root);
             
             if (semantic_success) {
-                printf("✓ Semantic analysis successful!\n");
+                printf("Semantic analysis successful!\n");
                 analyzer.print_symbol_table();
+                CodeGenerator generator;
+                ast_root->accept(generator);
+                std::string code = generator.getCode();
+                FILE* outputFile = fopen("jade.yy.cpp", "w");
+                fprintf(outputFile, "%s", code.c_str());
+                fclose(outputFile);
+                printf("C++ code generated in jade.yy.cpp\n");
             } else {
-                printf("✗ Semantic analysis failed with %d error(s)\n", analyzer.get_error_count());
+                printf("Semantic analysis failed with %d error(s)\n", analyzer.get_error_count());
                 if (analyzer.get_warning_count() > 0) {
                     printf("  %d warning(s) found\n", analyzer.get_warning_count());
                 }
@@ -678,9 +686,9 @@ int main(int argc, char **argv) {
             delete ast_root;
         }
     } else if (result == 0) {
-        printf("⚠ Parse completed with %d error(s) recovered.\n", error_count);
+        printf("Parse completed with %d error(s) recovered.\n", error_count);
     } else {
-        printf("✗ Parse failed with %d error(s).\n", error_count);
+        printf("Parse failed with %d error(s).\n", error_count);
     }
     
     if (argc > 1) {

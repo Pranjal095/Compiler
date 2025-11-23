@@ -14,8 +14,8 @@ LEXER_OUT = lex.yy.c
 PARSER_OUT = parser.tab.c
 PARSER_HDR = parser.tab.h
 
-AST_SRCS = AST/ast.cpp AST/astNodes.cpp AST/treePrintVisitor.cpp
-AST_OBJS = ast.o astNodes.o treePrintVisitor.o
+AST_SRCS = AST/ast.cpp AST/astNodes.cpp AST/treePrintVisitor.cpp AST/codeGenerator.cpp
+AST_OBJS = ast.o astNodes.o treePrintVisitor.o codeGenerator.o
 
 SEMANTIC_SRCS = SymbolTable/symbolTable.cpp AST/semanticChecks.cpp
 SEMANTIC_OBJS = $(SEMANTIC_SRCS:.cpp=.o)
@@ -58,12 +58,15 @@ astNodes.o: AST/astNodes.cpp AST/astNodes.h AST/ast.h AST/visitor.h
 treePrintVisitor.o: AST/treePrintVisitor.cpp AST/visitor.h AST/astNodes.h
 	$(CXX) $(CXXFLAGS) -c -o treePrintVisitor.o AST/treePrintVisitor.cpp
 
+codeGenerator.o: AST/codeGenerator.cpp AST/codeGenerator.h AST/ast.h AST/visitor.h AST/astNodes.h
+	$(CXX) $(CXXFLAGS) -c -o codeGenerator.o AST/codeGenerator.cpp
+
 SymbolTable/%.o: SymbolTable/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean up generated files
 clean:
-	rm -f $(TARGET) AST.tree
+	rm -f $(TARGET) AST.tree jade.yy.cpp
 
 # Test with sample programs
 test: $(TARGET)
