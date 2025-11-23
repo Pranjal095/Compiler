@@ -151,6 +151,7 @@ void CodeGenerator::visit(Program &node) {
             int startRank = roleMap[roleName];
             int endRank = startRank + roleSizes[roleName];
             std::string condition = "worldRank >= " + std::to_string(startRank) + " && worldRank < " + std::to_string(endRank);
+            indent();
             generate("if (" + condition + ") {\n");
             indentLevel++;
             
@@ -212,7 +213,6 @@ void CodeGenerator::visit(TypeDecl &node) {
 }
 
 void CodeGenerator::visit(CppCodeDecl &node) {
-    generateLine("// inline C++ Code");
     generateLine(node.code);
     generateLine("");
 }
@@ -221,6 +221,7 @@ void CodeGenerator::visit(RoleTarget &node) {
 }
 
 void CodeGenerator::visit(VarDecl &node) {
+    indent();
     std::string typeStr = getCppType(node.type.get());
     generate(typeStr + " " + node.id);
     if (node.expr) {
@@ -228,30 +229,29 @@ void CodeGenerator::visit(VarDecl &node) {
         node.expr->accept(*this);
     }
     generate(";\n");
-    indent();
 }
 
 void CodeGenerator::visit(AssignStmt &node) {
+    indent();
     node.lvalue->accept(*this);
     generate(" = ");
     node.expr->accept(*this);
     generate(";\n");
-    indent();
 }
 
 void CodeGenerator::visit(PrintStmt &node) {
+    indent();
     generate("std::cout << ");
     node.expr->accept(*this);
     generate(" << std::endl;\n");
-    indent();
 }
 
 void CodeGenerator::visit(IfStmt &node) {
+    indent();
     generate("if (");
     node.condition->accept(*this);
     generate(") {\n");
     indentLevel++;
-    indent();
     for (const auto& stmt : node.if_body) {
         stmt->accept(*this);
     }
@@ -261,7 +261,6 @@ void CodeGenerator::visit(IfStmt &node) {
     if (!node.else_body.empty()) {
         generate(" else {\n");
         indentLevel++;
-        indent();
         for (const auto& stmt : node.else_body) {
             stmt->accept(*this);
         }
@@ -270,13 +269,12 @@ void CodeGenerator::visit(IfStmt &node) {
         generate("}");
     }
     generate("\n");
-    indent();
 }
 
 void CodeGenerator::visit(ExprStmt &node) {
+    indent();
     node.expr->accept(*this);
     generate(";\n");
-    indent();
 }
 
 void CodeGenerator::visit(FunctionCall &node) {
@@ -291,14 +289,15 @@ void CodeGenerator::visit(FunctionCall &node) {
 }
 
 void CodeGenerator::visit(BroadcastStmt &node) {
+    indent();
     generate("{\n");
     indentLevel++;
-    indent();
     
     for (const auto& target : node.targets) {
         std::string roleName = target->id;
         int baseRank = roleMap[roleName];
         int count = roleSizes[roleName];
+        indent();
         generate("// broadcast to role " + roleName + "\n");
         indent();
         generate("for (int r = " + std::to_string(baseRank) + "; r < " + std::to_string(baseRank + count) + "; r++) {\n");
@@ -310,15 +309,14 @@ void CodeGenerator::visit(BroadcastStmt &node) {
         indentLevel--;
         indent();
         generate("}\n");
-        indent();
     }
     indentLevel--;
     indent();
     generate("}\n");
-    indent();
 }
 
 void CodeGenerator::visit(SendStmt &node) {
+    indent();
     generate("{\n");
     indentLevel++;
     indent();
@@ -337,10 +335,10 @@ void CodeGenerator::visit(SendStmt &node) {
     indentLevel--;
     indent();
     generate("}\n");
-    indent();
 }
 
 void CodeGenerator::visit(RecvStmt &node) {
+    indent();
     generate("{\n");
     indentLevel++;
     indent();
@@ -362,10 +360,10 @@ void CodeGenerator::visit(RecvStmt &node) {
     indentLevel--;
     indent();
     generate("}\n");
-    indent();
 }
 
 void CodeGenerator::visit(GatherStmt &node) {
+    indent();
     generate("{\n");
     indentLevel++;
     indent();
@@ -377,6 +375,7 @@ void CodeGenerator::visit(GatherStmt &node) {
         std::string roleName = target->id;
         int baseRank = roleMap[roleName];
         int count = roleSizes[roleName];
+        indent();
         generate("// wait for role " + roleName + "\n");
         indent();
         generate("for (int r = " + std::to_string(baseRank) + "; r < " + std::to_string(baseRank + count) + "; r++) {\n");
@@ -386,15 +385,14 @@ void CodeGenerator::visit(GatherStmt &node) {
         indentLevel--;
         indent();
         generate("}\n");
-        indent();
     }
     indentLevel--;
     indent();
     generate("}\n");
-    indent();
 }
 
 void CodeGenerator::visit(SpawnStmt &node) {
+    indent();
     generate("{\n");
     indentLevel++;
     indent();
@@ -405,6 +403,7 @@ void CodeGenerator::visit(SpawnStmt &node) {
         std::string roleName = target->id;
         int baseRank = roleMap[roleName];
         int count = roleSizes[roleName];
+        indent();
         generate("// trigger role " + roleName + "\n");
         indent();
         generate("for (int r = " + std::to_string(baseRank) + "; r < " + std::to_string(baseRank + count) + "; r++) {\n");
@@ -414,12 +413,10 @@ void CodeGenerator::visit(SpawnStmt &node) {
         indentLevel--;
         indent();
         generate("}\n");
-        indent();
     }
     indentLevel--;
     indent();
     generate("}\n");
-    indent();
 }
 
 void CodeGenerator::visit(IntLiteral &node) {
