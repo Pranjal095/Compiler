@@ -1,0 +1,24 @@
+$ Test: Conditional branch deadlock detection
+
+role A;
+role B;
+
+task t1 on A {
+    int x = 10;
+    if (x > 5) {
+        send 1 to B;
+        recv x from B;  $ Deadlock in if branch
+    } else {
+        print("Safe path");
+    }
+}
+
+task t2 on B {
+    int y = 20;
+    if (y > 5) {
+        send 2 to A;
+        recv y from A;  $Deadlock in if branch
+    } else {
+        print("Safe path");
+    }
+}

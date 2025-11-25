@@ -18,15 +18,13 @@ void DeadlockAnalyzer::analyzeProgram(Program* program) {
     // Extract metadata (roles, tasks, spawns)
     extractMetadata(program);
     
-    // Extract all communication events
+    // Extract all communication events with execution contexts
     extractCommEvents(program);
     
-    // Build wait-for graph
-    buildWaitForGraph();
+    // Run path-sensitive analysis
+    analyzePathSensitive();
     
-    // Run deadlock detection algorithms
-    detectCircularWait();
-    detectSendRecvMismatches();
+    // Also check global gather-spawn inconsistencies
     detectGatherSpawnInconsistencies();
 }
 
@@ -79,65 +77,115 @@ void DeadlockAnalyzer::extractCommEvents(Program* program) {
 
 void DeadlockAnalyzer::extractTaskCommEvents(TaskDecl* task, const std::string& roleName) {
     for (const auto& stmt : task->stmts) {
-        extractStmtCommEvents(stmt.get(), roleName, task->id);
+        extractStmtCommEvents(stmt.get(), roleName, task->id, "");
     }
 }
 
-void DeadlockAnalyzer::extractStmtCommEvents(Stmt* stmt, const std::string& currentRole, const std::string& taskName) {
+void DeadlockAnalyzer::extractStmtCommEvents(Stmt* stmt, const std::string& currentRole, 
+                                               const std::string& taskName, const std::string& contextPath) {
     if (auto send = dynamic_cast<SendStmt*>(stmt)) {
         std::string targetRole = send->target->id;
-        commEvents.emplace_back(CommEvent::SEND, currentRole, targetRole, taskName);
+        commEvents.emplace_back(CommEvent::SEND, currentRole, targetRole, taskName, contextPath);
     }
     else if (auto recv = dynamic_cast<RecvStmt*>(stmt)) {
         std::string fromRole = recv->from->id;
-        commEvents.emplace_back(CommEvent::RECV, currentRole, fromRole, taskName);
+        commEvents.emplace_back(CommEvent::RECV, currentRole, fromRole, taskName, contextPath);
     }
     else if (auto broadcast = dynamic_cast<BroadcastStmt*>(stmt)) {
         for (const auto& target : broadcast->targets) {
-            commEvents.emplace_back(CommEvent::BROADCAST, currentRole, target->id, taskName);
+            commEvents.emplace_back(CommEvent::BROADCAST, currentRole, target->id, taskName, contextPath);
         }
     }
     else if (auto gather = dynamic_cast<GatherStmt*>(stmt)) {
         for (const auto& target : gather->from_targets) {
-            commEvents.emplace_back(CommEvent::GATHER, currentRole, target->id, taskName);
+            commEvents.emplace_back(CommEvent::GATHER, currentRole, target->id, taskName, contextPath);
         }
     }
     else if (auto spawn = dynamic_cast<SpawnStmt*>(stmt)) {
         for (const auto& target : spawn->on_targets) {
-            commEvents.emplace_back(CommEvent::SPAWN, currentRole, target->id, taskName);
+            commEvents.emplace_back(CommEvent::SPAWN, currentRole, target->id, taskName, contextPath);
         }
     }
     else if (auto ifStmt = dynamic_cast<IfStmt*>(stmt)) {
-        // Recursively analyze both branches
+        // Analyze if branch with context
+        std::string ifPath = contextPath.empty() ? "if" : contextPath + "/if";
         for (const auto& s : ifStmt->if_body) {
-            extractStmtCommEvents(s.get(), currentRole, taskName);
+            extractStmtCommEvents(s.get(), currentRole, taskName, ifPath);
         }
-        for (const auto& s : ifStmt->else_body) {
-            extractStmtCommEvents(s.get(), currentRole, taskName);
+        
+        // Analyze else branch with context
+        if (!ifStmt->else_body.empty()) {
+            std::string elsePath = contextPath.empty() ? "else" : contextPath + "/else";
+            for (const auto& s : ifStmt->else_body) {
+                extractStmtCommEvents(s.get(), currentRole, taskName, elsePath);
+            }
         }
     }
 }
 
-void DeadlockAnalyzer::buildWaitForGraph() {
-    // Initialize nodes
+std::set<std::string> DeadlockAnalyzer::getUniquePaths() {
+    std::set<std::string> paths;
+    paths.insert(""); // Always analyze unconditional path
+    
+    for (const auto& event : commEvents) {
+        if (!event.context_path.empty()) {
+            paths.insert(event.context_path);
+        }
+    }
+    return paths;
+}
+
+std::vector<CommEvent> DeadlockAnalyzer::filterEventsByPath(const std::string& path_filter) {
+    std::vector<CommEvent> filtered;
+    for (const auto& event : commEvents) {
+        // Include event if:
+        // 1. It's unconditional (empty context), OR
+        // 2. Its path matches the filter
+        if (event.context_path.empty() || event.context_path == path_filter) {
+            filtered.push_back(event);
+        }
+    }
+    return filtered;
+}
+
+void DeadlockAnalyzer::analyzePathSensitive() {
+    // Get all unique execution paths
+    auto paths = getUniquePaths();
+    
+    // Analyze each path separately
+    for (const auto& path : paths) {
+        auto pathEvents = filterEventsByPath(path);
+        
+        if (!pathEvents.empty()) {
+            // Run deadlock detection on this specific path
+            detectCircularWaitForPath(path, pathEvents);
+            detectSendRecvMismatchesForPath(path, pathEvents);
+        }
+    }
+}
+
+void DeadlockAnalyzer::buildWaitForGraphFromEvents(const std::vector<CommEvent>& events) {
+    // Clear and initialize
+    waitForGraph.clear();
     for (const auto& pair : roleSizes) {
         waitForGraph[pair.first] = std::set<std::string>();
     }
     
-    // Add edges based on blocking operations
-    for (const auto& event : commEvents) {
+    // Add edges based on blocking operations in these events
+    for (const auto& event : events) {
         if (event.type == CommEvent::RECV) {
-            // recv creates a wait dependency
             waitForGraph[event.from_role].insert(event.to_role);
         }
         else if (event.type == CommEvent::GATHER) {
-            // gather creates a wait dependency
             waitForGraph[event.from_role].insert(event.to_role);
         }
     }
 }
 
-void DeadlockAnalyzer::detectCircularWait() {
+void DeadlockAnalyzer::detectCircularWaitForPath(const std::string& path, const std::vector<CommEvent>& events) {
+    // Build wait-for graph for this specific path
+    buildWaitForGraphFromEvents(events);
+    
     std::set<std::string> visited;
     std::set<std::string> recStack;
     std::vector<std::string> cycle;
@@ -145,8 +193,12 @@ void DeadlockAnalyzer::detectCircularWait() {
     for (const auto& pair : waitForGraph) {
         if (visited.find(pair.first) == visited.end()) {
             if (hasCycle(pair.first, visited, recStack, cycle)) {
-                // Found a cycle
-                std::string desc = "Circular wait detected: ";
+                // Found a cycle in this execution path
+                std::string desc = "Circular wait detected";
+                if (!path.empty()) {
+                    desc += " in '" + path + "' branch";
+                }
+                desc += ": ";
                 for (size_t i = 0; i < cycle.size(); ++i) {
                     desc += cycle[i];
                     if (i < cycle.size() - 1) desc += " → ";
@@ -162,8 +214,8 @@ void DeadlockAnalyzer::detectCircularWait() {
                     }
                 }
                 
-                addWarning("circular_wait", desc, cycle, tasks);
-                return;  // Report first cycle found
+                addWarning("circular_wait", desc, cycle, tasks, path);
+                return;  // Report first cycle found per path
             }
         }
     }
@@ -196,30 +248,17 @@ bool DeadlockAnalyzer::hasCycle(const std::string& node, std::set<std::string>& 
     return false;
 }
 
-void DeadlockAnalyzer::detectSendRecvMismatches() {
+void DeadlockAnalyzer::detectSendRecvMismatchesForPath(const std::string& path, const std::vector<CommEvent>& events) {
     // Build map of sends, (from_role, to_role) -> count
     std::map<std::pair<std::string, std::string>, int> sends;
     std::map<std::pair<std::string, std::string>, int> recvs;
     
-    for (const auto& event : commEvents) {
+    for (const auto& event : events) {
         if (event.type == CommEvent::SEND || event.type == CommEvent::BROADCAST) {
             sends[{event.from_role, event.to_role}]++;
         }
         else if (event.type == CommEvent::RECV) {
-            // recv from X means current_role receives from to_role
             recvs[{event.from_role, event.to_role}]++;
-        }
-    }
-    
-    // Check for unmatched sends
-    for (const auto& send : sends) {
-        std::string from = send.first.first;
-        std::string to = send.first.second;
-        
-        // Look for corresponding recv in 'to' from 'from'
-        if (recvs.find({to, from}) == recvs.end()) {
-            std::string desc = "Unmatched send: " + from + " sends to " + to + ", but " + to + " has no corresponding recv from " + from;
-            addWarning("unmatched_send", desc, {from, to}, {});
         }
     }
     
@@ -230,14 +269,16 @@ void DeadlockAnalyzer::detectSendRecvMismatches() {
         
         // Check if B also sends to A
         if (sends.find({role_b, role_a}) != sends.end()) {
-            // Both A sends to B and B sends to A
-            // Check if both have recvs after sends (would deadlock)
             bool a_recvs_from_b = recvs.find({role_a, role_b}) != recvs.end();
             bool b_recvs_from_a = recvs.find({role_b, role_a}) != recvs.end();
             
             if (a_recvs_from_b && b_recvs_from_a) {
-                std::string desc = "Potential send-send deadlock: " + role_a + " and " + role_b + " both send to each other before receiving";
-                addWarning("send_send_deadlock", desc, {role_a, role_b}, {});
+                std::string desc = "Potential send-send deadlock";
+                if (!path.empty()) {
+                    desc += " in '" + path + "' branch";
+                }
+                desc += ": " + role_a + " and " + role_b + " both send to each other before receiving";
+                addWarning("send_send_deadlock", desc, {role_a, role_b}, {}, path);
             }
         }
     }
@@ -251,18 +292,22 @@ void DeadlockAnalyzer::detectGatherSpawnInconsistencies() {
             if (spawnedRoles.find(target) == spawnedRoles.end()) {
                 std::string desc = "Gather waiting for role '" + target + 
                                  "' which is never spawned (potential deadlock)";
-                addWarning("gather_without_spawn", desc, {event.from_role, target}, {event.task_name});
+                if (!event.context_path.empty()) {
+                    desc += " in '" + event.context_path + "' branch";
+                }
+                addWarning("gather_without_spawn", desc, {event.from_role, target}, {event.task_name}, event.context_path);
             }
         }
     }
 }
 
-void DeadlockAnalyzer::addWarning(const std::string& type, const std::string& desc, const std::vector<std::string>& roles, const std::vector<std::string>& tasks) {
+void DeadlockAnalyzer::addWarning(const std::string& type, const std::string& desc, const std::vector<std::string>& roles, const std::vector<std::string>& tasks, const std::string& path) {
     DeadlockWarning w;
     w.type = type;
     w.description = desc;
     w.involved_roles = roles;
     w.involved_tasks = tasks;
+    w.execution_path = path;
     warnings.push_back(w);
 }
 
@@ -287,6 +332,11 @@ void DeadlockAnalyzer::printWarnings() const {
             }
             std::cerr << std::endl;
         }
+        
+        if (!warning.execution_path.empty()) {
+            std::cerr << "    Execution path: " << warning.execution_path << std::endl;
+        }
+        
         std::cerr << std::endl;
     }
 }
