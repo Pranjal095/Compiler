@@ -1,6 +1,8 @@
 # Makefile for the Jade Language Compiler
 CXX = g++
 CXXFLAGS = -Wall -g -std=c++17 -I. -I./AST
+MPICXX = mpic++
+MPIRUN = mpirun
 LEX = flex
 YACC = bison
 
@@ -66,7 +68,8 @@ SymbolTable/%.o: SymbolTable/%.cpp
 
 # Clean up generated files
 clean:
-	rm -f $(TARGET) AST.tree jade.yy.cpp
+	rm -f $(TARGET) AST.tree jade.yy.cpp topology_parser clustering_mpi
+	rm -rf output_topologies
 
 # Test with sample programs
 test: $(TARGET)
@@ -78,4 +81,35 @@ test: $(TARGET)
 # 	@echo "Testing task with communication..."
 # 	./$(TARGET) tests/test_comm.jade
 
-.PHONY: all clean test
+.PHONY: all clean test run_optimizations test_optimizations
+
+# ===== MPI Optimization Targets =====
+
+# Build topology parser (no MPI required)
+topology_parser: Optimizations/topology_parser.cpp
+	$(CXX) $(CXXFLAGS) -o topology_parser Optimizations/topology_parser.cpp
+
+# Build clustering with MPI
+clustering_mpi: Optimizations/expander_clustering.cpp
+	$(MPICXX) $(CXXFLAGS) -o clustering_mpi Optimizations/expander_clustering.cpp
+
+# Run optimizations: find all .top files, validate, and run clustering
+run_optimizations: topology_parser clustering_mpi
+	@mkdir -p output_topologies
+	@for topfile in tests/*.top; do \
+		if [ -f "$$topfile" ]; then \
+			echo "\n*** Processing $$topfile ***"; \
+			echo "Validating topology file..."; \
+			if ./topology_parser "$$topfile"; then \
+				basename=$$(basename "$$topfile" .top); \
+				echo "Running MPI clustering..."; \
+				$(MPIRUN) -np 8 ./clustering_mpi "$$topfile" "output_topologies/$$basename"; \
+				echo "Output files: output_topologies/$$basename.output, output_topologies/$$basename.stats"; \
+			else \
+				echo "WARNING: Skipping $$topfile due to validation failure"; \
+			fi; \
+		fi; \
+	done
+
+# Explicit target for testing optimizations
+test_optimizations: run_optimizations
