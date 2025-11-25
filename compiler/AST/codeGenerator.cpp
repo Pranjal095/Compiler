@@ -215,6 +215,20 @@ void CodeGenerator::visit(Program &node) {
             int startRank = roleMap[roleName];
             int endRank = startRank + roleSizes[roleName];
             std::string condition = "worldRank >= " + std::to_string(startRank) + " && worldRank < " + std::to_string(endRank);
+            
+            if (taskDecl->target->index) {
+                if (auto intLit = dynamic_cast<IntLiteral*>(taskDecl->target->index.get())) {
+                    int targetRank = startRank + intLit->value;
+                    condition = "worldRank == " + std::to_string(targetRank);
+                    
+                    if (taskDecl->target->range_end) {
+                        if (auto endLit = dynamic_cast<IntLiteral*>(taskDecl->target->range_end.get())) {
+                            int endTargetRank = startRank + endLit->value;
+                             condition = "worldRank >= " + std::to_string(targetRank) + " && worldRank <= " + std::to_string(endTargetRank);
+                        }
+                    }
+                }
+            }
             indent();
             generate("if (" + condition + ") {\n");
             indentLevel++;
