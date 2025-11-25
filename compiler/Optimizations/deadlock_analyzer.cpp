@@ -138,9 +138,7 @@ std::set<std::string> DeadlockAnalyzer::getUniquePaths() {
 std::vector<CommEvent> DeadlockAnalyzer::filterEventsByPath(const std::string& path_filter) {
     std::vector<CommEvent> filtered;
     for (const auto& event : commEvents) {
-        // Include event if:
-        // 1. It's unconditional (empty context), OR
-        // 2. Its path matches the filter
+        // Include event if it's unconditional (empty context), or its path matches the filter
         if (event.context_path.empty() || event.context_path == path_filter) {
             filtered.push_back(event);
         }

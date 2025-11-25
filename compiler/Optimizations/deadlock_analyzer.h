@@ -17,8 +17,7 @@ struct CommEvent {
     std::string context_path;   // Execution path (e.g., "if_branch", "else_branch")
     int line_number;            // For error reporting (future enhancement)
     
-    CommEvent(Type t, const std::string& from, const std::string& to, const std::string& task, const std::string& ctx = "") 
-        : type(t), from_role(from), to_role(to), task_name(task), context_path(ctx), line_number(0) {}
+    CommEvent(Type t, const std::string& from, const std::string& to, const std::string& task, const std::string& ctx = "") : type(t), from_role(from), to_role(to), task_name(task), context_path(ctx), line_number(0) {}
 };
 
 // Represents a potential deadlock scenario
@@ -59,8 +58,7 @@ private:
     void extractMetadata(Program* program);
     void extractCommEvents(Program* program);
     void extractTaskCommEvents(TaskDecl* task, const std::string& roleName);
-    void extractStmtCommEvents(Stmt* stmt, const std::string& currentRole, 
-                               const std::string& taskName, const std::string& contextPath = "");
+    void extractStmtCommEvents(Stmt* stmt, const std::string& currentRole, const std::string& taskName, const std::string& contextPath = "");
     
     // Path-sensitive analysis
     void analyzePathSensitive();
@@ -80,8 +78,7 @@ private:
     bool hasCycle(const std::string& start, std::set<std::string>& visited, std::set<std::string>& recStack, std::vector<std::string>& cycle);
     
     // Helper functions
-    void addWarning(const std::string& type, const std::string& desc, const std::vector<std::string>& roles, 
-                    const std::vector<std::string>& tasks, const std::string& path = "");
+    void addWarning(const std::string& type, const std::string& desc, const std::vector<std::string>& roles, const std::vector<std::string>& tasks, const std::string& path = "");
     std::set<std::string> getUniquePaths();
 };
 
