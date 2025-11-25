@@ -67,3 +67,21 @@ To remove generated files and executables:
 ```bash
 make clean
 ```
+
+## Running Examples
+
+### Matrix Multiplication
+```bash
+cd compiler
+./jade_compiler examples/matrix_mult.jade
+mpic++ -o matrix_mult jade.yy.cpp
+mpirun -np 5 ./matrix_mult
+```
+
+### Sudoku Validator
+```bash
+cd compiler
+./jade_compiler examples/sudoku.jade
+mpic++ -o sudoku jade.yy.cpp
+mpirun -np 4 ./sudoku
+```

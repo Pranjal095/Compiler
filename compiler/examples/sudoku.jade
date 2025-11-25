@@ -1,0 +1,154 @@
+$ This program validates a 9x9 Sudoku grid using distributed workers.
+
+role coordinator;
+role worker[3];
+
+cpp {{
+#include <iostream>
+#include <vector>
+#include <set>
+
+bool is_valid_unit(const std::vector<int>& unit) {
+    std::set<int> seen;
+    for (int num : unit) {
+        if (num < 1 || num > 9 || seen.count(num)) return false;
+        seen.insert(num);
+    }
+    return true;
+}
+
+void print_board(const std::vector<std::vector<int>>& b) {
+    std::cout << "Sudoku Board:" << std::endl;
+    for(int i=0; i<b.size(); i++) {
+        if(i % 3 == 0 && i != 0) std::cout << "------+-------+------" << std::endl;
+        for(int j=0; j<b[i].size(); j++) {
+            if(j % 3 == 0 && j != 0) std::cout << "| ";
+            std::cout << b[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void init_sudoku(std::vector<std::vector<int>>& board) {
+    board.resize(9);
+    int valid_board[9][9] = {
+        {5, 3, 4, 6, 7, 8, 9, 1, 2},
+        {6, 7, 2, 1, 9, 5, 3, 4, 8},
+        {1, 9, 8, 3, 4, 2, 5, 6, 7},
+        {8, 5, 9, 7, 6, 1, 4, 2, 3},
+        {4, 2, 6, 8, 5, 3, 7, 9, 1},
+        {7, 1, 3, 9, 2, 4, 8, 5, 6},
+        {9, 6, 1, 5, 3, 7, 2, 8, 4},
+        {2, 8, 7, 4, 1, 9, 6, 3, 5},
+        {3, 4, 5, 2, 8, 6, 1, 7, 9}
+    };
+    for(int i=0; i<9; i++) {
+        board[i].resize(9);
+        for(int j=0; j<9; j++)
+            board[i][j] = valid_board[i][j];
+    }
+}
+
+bool check_rows(const std::vector<std::vector<int>>& local_board) {
+    bool valid = true;
+    for(int i=0; i<9; i++) {
+        std::vector<int> row;
+        for(int j=0; j<9; j++) row.push_back(local_board[i][j]);
+        if(!is_valid_unit(row)) {
+            valid = false;
+            std::cout << "Row " << i << " is invalid." << std::endl;
+        }
+    }
+    if(valid) std::cout << "All rows valid." << std::endl;
+    return valid;
+}
+
+bool check_cols(const std::vector<std::vector<int>>& local_board) {
+    bool valid = true;
+    for(int j=0; j<9; j++) {
+        std::vector<int> col;
+        for(int i=0; i<9; i++) col.push_back(local_board[i][j]);
+        if(!is_valid_unit(col)) {
+            valid = false;
+            std::cout << "Column " << j << " is invalid." << std::endl;
+        }
+    }
+    if(valid) std::cout << "All columns valid." << std::endl;
+    return valid;
+}
+
+bool check_subgrids(const std::vector<std::vector<int>>& local_board) {
+    bool valid = true;
+    for(int block=0; block<9; block++) {
+        std::vector<int> subgrid;
+        int start_row = (block / 3) * 3;
+        int start_col = (block % 3) * 3;
+        for(int i=0; i<3; i++) {
+            for(int j=0; j<3; j++) {
+                subgrid.push_back(local_board[start_row + i][start_col + j]);
+            }
+        }
+        if(!is_valid_unit(subgrid)) {
+            valid = false;
+            std::cout << "Subgrid " << block << " is invalid." << std::endl;
+        }
+    }
+    if(valid) std::cout << "All subgrids valid." << std::endl;
+    return valid;
+}
+}}
+
+task setup on coordinator {
+    tensor<int> [9][9] board;
+    
+    print("Initializing Sudoku board...");
+    init_sudoku(board);
+    print_board(board);
+    broadcast board to worker;
+}
+
+task validate_rows on worker[0] {
+    tensor<int> [9][9] local_board;
+    recv local_board from coordinator;
+    
+    bool valid;
+    valid = check_rows(local_board);
+    
+    send valid to coordinator;
+}
+
+task validate_cols on worker[1] {
+    tensor<int> [9][9] local_board;
+    recv local_board from coordinator;
+    
+    bool valid;
+    valid = check_cols(local_board);
+    
+    send valid to coordinator;
+}
+
+task validate_subgrids on worker[2] {
+    tensor<int> [9][9] local_board;
+    recv local_board from coordinator;
+    
+    bool valid;
+    valid = check_subgrids(local_board);
+    
+    send valid to coordinator;
+}
+
+task collect_results on coordinator {
+    bool r1;
+    bool r2;
+    bool r3;
+    
+    recv r1 from worker[0];
+    recv r2 from worker[1];
+    recv r3 from worker[2];
+    
+    if (r1 && r2 && r3) {
+        print("Sudoku Board is VALID!");
+    } else {
+        print("Sudoku Board is INVALID!");
+    }
+}

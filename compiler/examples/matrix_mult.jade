@@ -1,0 +1,109 @@
+$ This program demonstrates how to perform matrix multiplication using multiple workers.
+
+role coordinator;
+role worker[4];
+
+cpp {{
+#include <iostream>
+#include <iomanip>
+#include <vector>
+
+// Helper to resize and init matrix if needed (though Jade init might handle it, vectors start empty)
+void init_matrix(std::vector<std::vector<float>>& mat, float start_val) {
+    mat.resize(4);
+    for(int i=0; i<4; i++) {
+        mat[i].resize(4);
+        for(int j=0; j<4; j++) {
+            mat[i][j] = start_val + i + j;
+        }
+    }
+}
+
+void print_matrix(const std::vector<std::vector<float>>& mat, const std::string& name) {
+    std::cout << "Matrix " << name << ":" << std::endl;
+    for(int i=0; i<mat.size(); i++) {
+        for(int j=0; j<mat[i].size(); j++) {
+            std::cout << std::setw(6) << mat[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+std::vector<float> compute_row_cpp(int row_idx, const std::vector<std::vector<float>>& A, const std::vector<std::vector<float>>& B) {
+    std::vector<float> result_row(4, 0.0f);
+    // Ensure A and B are sized correctly
+    if (A.size() < 4 || B.size() < 4) return result_row;
+    
+    for(int j=0; j<4; j++) {
+        for(int k=0; k<4; k++) {
+            result_row[j] += A[row_idx][k] * B[k][j];
+        }
+    }
+    std::cout << "Worker computed row " << row_idx << std::endl;
+    return result_row;
+}
+
+void update_result_matrix(std::vector<std::vector<float>>& C, int row_idx, const std::vector<float>& row_data) {
+    if (C.size() < 4) C.resize(4);
+    C[row_idx] = row_data;
+}
+}}
+
+task setup on coordinator {
+    tensor<float> [4][4] A;
+    tensor<float> [4][4] B;
+
+    print("Initializing matrices...");
+    init_matrix(A, 1.0);
+    init_matrix(B, 2.0);
+    print_matrix(A, "A");
+    print_matrix(B, "B");
+
+    broadcast A to worker;
+    broadcast B to worker;
+}
+
+task distribute_indices on coordinator {
+    int idx;
+    idx = 0; send idx to worker[0];
+    idx = 1; send idx to worker[1];
+    idx = 2; send idx to worker[2];
+    idx = 3; send idx to worker[3];
+}
+
+task compute_row on worker[0..3] {
+    tensor<float> [4][4] local_A;
+    tensor<float> [4][4] local_B;
+    recv local_A from coordinator;
+    recv local_B from coordinator;
+    
+    int my_row;
+    recv my_row from coordinator;
+    
+    tensor<float> [4] result_row;
+    result_row = compute_row_cpp(my_row, local_A, local_B);
+    
+    send result_row to coordinator;
+}
+
+task collect_results on coordinator {
+    tensor<float> [4][4] C;
+    
+    tensor<float> [4] row0;
+    tensor<float> [4] row1;
+    tensor<float> [4] row2;
+    tensor<float> [4] row3;
+    
+    recv row0 from worker[0];
+    recv row1 from worker[1];
+    recv row2 from worker[2];
+    recv row3 from worker[3];
+    
+    update_result_matrix(C, 0, row0);
+    update_result_matrix(C, 1, row1);
+    update_result_matrix(C, 2, row2);
+    update_result_matrix(C, 3, row3);
+    
+    print_matrix(C, "C (Result)");
+}
