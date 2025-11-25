@@ -1,0 +1,16 @@
+$ Test case: Send-send deadlock (both send before receive)
+
+role A;
+role B;
+
+task t1 on A {
+    int x;
+    send 1 to B;
+    recv x from B;
+}
+
+task t2 on B {
+    int y;
+    send 2 to A;
+    recv y from A;
+}

@@ -22,6 +22,9 @@ AST_OBJS = ast.o astNodes.o treePrintVisitor.o codeGenerator.o
 SEMANTIC_SRCS = SymbolTable/symbolTable.cpp AST/semanticChecks.cpp
 SEMANTIC_OBJS = $(SEMANTIC_SRCS:.cpp=.o)
 
+OPTIMIZATION_SRCS = Optimizations/deadlock_analyzer.cpp
+OPTIMIZATION_OBJS = deadlock_analyzer.o
+
 # Object files
 OBJS = parser.tab.o lex.yy.o $(AST_OBJS)
 
@@ -32,9 +35,9 @@ input = simple_test.jade
 all: $(TARGET)
 
 # Build the compiler
-$(TARGET): $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS)
+$(TARGET): $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) $(OPTIMIZATION_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
-	rm -f $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) parser.tab.c parser.tab.h lex.yy.c ast.o	
+	rm -f $(OBJS) $(AST_OBJS) $(SEMANTIC_OBJS) $(OPTIMIZATION_OBJS) parser.tab.c parser.tab.h lex.yy.c ast.o	
 
 # Generate parser files
 $(PARSER_OUT) $(PARSER_HDR): $(PARSER_SRC) parserTypes.h
@@ -66,6 +69,9 @@ codeGenerator.o: AST/codeGenerator.cpp AST/codeGenerator.h AST/ast.h AST/visitor
 SymbolTable/%.o: SymbolTable/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+deadlock_analyzer.o: Optimizations/deadlock_analyzer.cpp Optimizations/deadlock_analyzer.h
+	$(CXX) $(CXXFLAGS) -c -o deadlock_analyzer.o Optimizations/deadlock_analyzer.cpp
+
 # Clean up generated files
 clean:
 	rm -f $(TARGET) AST.tree jade.yy.cpp topology_parser clustering_mpi
@@ -82,8 +88,6 @@ test: $(TARGET)
 # 	./$(TARGET) tests/test_comm.jade
 
 .PHONY: all clean test run_optimizations test_optimizations
-
-# ===== MPI Optimization Targets =====
 
 # Build topology parser (no MPI required)
 topology_parser: Optimizations/topology_parser.cpp

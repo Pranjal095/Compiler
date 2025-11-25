@@ -1,4 +1,5 @@
 #include "semanticChecks.h"
+#include "../Optimizations/deadlock_analyzer.h"
 #include <iostream>
 #include <iomanip>
 
@@ -41,6 +42,20 @@ bool SemanticAnalyzer::analyze(Program* ast) {
     
     std::cout << "\n=== Semantic Analysis Complete ===\n";
     std::cout << "Errors: " << error_count << ", Warnings: " << warning_count << "\n";
+    
+    // Run deadlock detection if semantic analysis passed
+    if (error_count == 0) {
+        std::cout << "\n=== Running Deadlock Detection ===\n";
+        DeadlockAnalyzer deadlock_analyzer;
+        deadlock_analyzer.analyzeProgram(ast);
+        
+        if (deadlock_analyzer.hasDeadlocks()) {
+            std::cerr << "\nPotential deadlocks detected:\n";
+            deadlock_analyzer.printWarnings();
+        } else {
+            std::cout << "No deadlocks detected.\n";
+        }
+    }
     
     return error_count == 0;
 }

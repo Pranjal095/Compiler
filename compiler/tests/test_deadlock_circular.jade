@@ -1,0 +1,23 @@
+$ Test case: Circular wait deadlock (A→B→C→A)
+
+role A;
+role B;
+role C;
+
+task t1 on A {
+    int x;
+    recv x from C;
+    send 1 to B;
+}
+
+task t2 on B {
+    int y;
+    recv y from A;
+    send 2 to C;
+}
+
+task t3 on C {
+    int z;
+    recv z from B;
+    send 3 to A;
+}

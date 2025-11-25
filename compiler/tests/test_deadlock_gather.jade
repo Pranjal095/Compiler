@@ -1,0 +1,16 @@
+$ Test case: Gather without spawn (coordinator waits for workers that are never started)
+
+role coordinator;
+role worker[4];
+
+task main on coordinator {
+    int result = 100;
+    print(result);
+    gather from worker;
+    print("Done waiting");
+}
+
+task work on worker[0..3] {
+    int x = 42;
+    print(x);
+}
